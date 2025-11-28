@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course List - Drag & Drop</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .course-list {
+            list-style: none;
+        }
+
+        .course-item {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: move;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .course-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .course-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .course-item.drag-over {
+            border-color: #764ba2;
+            border-style: dashed;
+        }
+
+        .drag-handle {
+            color: #667eea;
+            font-size: 24px;
+            cursor: grab;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .course-content {
+            flex: 1;
+        }
+
+        .course-number {
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .course-code {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .course-name {
+            color: #333;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .order-display {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .order-display h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .order-display p {
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 My Course Schedule</h1>
+        <p class="subtitle">Drag and drop to reorder your courses</p>
+        
+        <ul class="course-list" id="courseList">
+            <li class="course-item" draggable="true" data-id="1">
+                <span class="drag-handle">⋮⋮</span>
+                <div class="course-number">1</div>
+                <div class="course-content">
+                    <div class="course-code">CS101</div>
+                    <div class="course-name">Introduction to Web Development</div>
+                </div>
+            </li>
+            <li class="course-item" draggable="true" data-id="2">
+                <span class="drag-handle">⋮⋮</span>
+                <div class="course-number">2</div>
+                <div class="course-content">
+                    <div class="course-code">CS201</div>
+                    <div class="course-name">Data Structures and Algorithms</div>
+                </div>
+            </li>
+            <li class="course-item" draggable="true" data-id="3">
+                <span class="drag-handle">⋮⋮</span>
+                <div class="course-number">3</div>
+                <div class="course-content">
+                    <div class="course-code">CS301</div>
+                    <div class="course-name">Database Management Systems</div>
+                </div>
+            </li>
+            <li class="course-item" draggable="true" data-id="4">
+                <span class="drag-handle">⋮⋮</span>
+                <div class="course-number">4</div>
+                <div class="course-content">
+                    <div class="course-code">CS401</div>
+                    <div class="course-name">Software Engineering Principles</div>
+                </div>
+            </li>
+            <li class="course-item" draggable="true" data-id="5">
+                <span class="drag-handle">⋮⋮</span>
+                <div class="course-number">5</div>
+                <div class="course-content">
+                    <div class="course-code">CS501</div>
+                    <div class="course-name">Machine Learning Fundamentals</div>
+                </div>
+            </li>
+        </ul>
+
+        <div class="order-display">
+            <h3>📋 Current Order:</h3>
+            <p id="orderText"></p>
+        </div>
+    </div>
+
+    <script>
+        let draggedElement = null;
+
+        const courseItems = document.querySelectorAll('.course-item');
+        const orderText = document.getElementById('orderText');
+
+        function updateOrderDisplay() {
+            const items = document.querySelectorAll('.course-item');
+            const courses = [];
+            
+            items.forEach(function(item, index) {
+                const courseName = item.querySelector('.course-name').textContent;
+                const courseCode = item.querySelector('.course-code').textContent;
+                courses.push((index + 1) + '. ' + courseCode + ' - ' + courseName);
+                
+                item.querySelector('.course-number').textContent = index + 1;
+            });
+            
+            orderText.innerHTML = courses.join('<br>');
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = Array.from(container.querySelectorAll('.course-item:not(.dragging)'));
+
+            return draggableElements.reduce(function(closest, child) {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        courseItems.forEach(function(item) {
+            item.addEventListener('dragstart', function(e) {
+                draggedElement = this;
+                this.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            item.addEventListener('dragend', function() {
+                this.classList.remove('dragging');
+                updateOrderDisplay();
+            });
+
+            item.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                
+                if (this === draggedElement) return;
+                
+                const list = this.parentNode;
+                const draggingItem = document.querySelector('.dragging');
+                
+                const afterElement = getDragAfterElement(list, e.clientY);
+                
+                if (afterElement == null) {
+                    list.appendChild(draggingItem);
+                } else {
+                    list.insertBefore(draggingItem, afterElement);
+                }
+            });
+
+            item.addEventListener('dragenter', function(e) {
+                e.preventDefault();
+                if (this !== draggedElement) {
+                    this.classList.add('drag-over');
+                }
+            });
+
+            item.addEventListener('dragleave', function() {
+                this.classList.remove('drag-over');
+            });
+
+            item.addEventListener('drop', function() {
+                this.classList.remove('drag-over');
+            });
+        });
+
+        updateOrderDisplay();
+    </script>
+</body>
+</html>
